@@ -1,0 +1,78 @@
+name: CI
+
+# Verifies that every formula change actually builds, passes audit and runs,
+# on both platforms the tap supports. The tap had no CI before: bumps were
+# merged after a manual local `brew install --build-from-source`, which meant
+# the check was as reliable as whoever remembered to run it.
+#
+# Building from source is what catches a stale `resource` block: the bump
+# workflow in rgielen/leitum rewrites only `url` and `sha256`, so if a release
+# adds or drops a transitive dependency, pip resolution fails here rather than
+# on a user's machine.
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+# A formula build takes tens of minutes; a push to main after a green PR would
+# only repeat what the PR already proved.
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  formula:
+    name: leitum on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # Report both platforms even when one fails — knowing it is Linux-only
+      # is worth another few minutes.
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Homebrew
+        uses: Homebrew/actions/setup-homebrew@master
+
+      - name: Audit
+        run: brew audit --strict --formula ./Formula/leitum.rb
+
+      - name: Install from source
+        run: brew install --build-from-source --formula ./Formula/leitum.rb
+
+      - name: Test
+        run: brew test --formula ./Formula/leitum.rb
+
+      - name: Smoke check the installed binary
+        run: |
+          leitum --version
+          leitum --help > /dev/null
+
+  automerge:
+    name: Merge the release bump
+    needs: formula
+    # Only the bump branches that rgielen/leitum's release workflow opens.
+    # Anything else stays a human decision.
+    if: >-
+      github.event_name == 'pull_request' &&
+      startsWith(github.head_ref, 'leitum-') &&
+      github.event.pull_request.user.login == 'rgielen'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Merge
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: gh pr merge "$PR" --rebase --repo "$REPO"
