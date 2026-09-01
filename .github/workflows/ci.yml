@@ -43,18 +43,21 @@ jobs:
       - name: Set up Homebrew
         uses: Homebrew/actions/setup-homebrew@1f8e202ffddf94def7f42f6fa3a482e821489f9c # 2026.07.10.1
 
-      # `brew audit [path]` is disabled in current Homebrew — every command
-      # needs a formula NAME. So the checkout has to sit where Homebrew looks
-      # for taps, which makes this PR's formula addressable as
-      # rgielen/taps/leitum. The copy keeps .git, which Homebrew expects a tap
-      # to have.
-      - name: Install the checkout as a local tap
+      # `brew audit [path]` is disabled in current Homebrew — every command needs
+      # a formula NAME, so this PR's checkout has to be what Homebrew sees as
+      # the tap. setup-homebrew already symlinks it there; this only fills in if
+      # that ever changes. Do not replace an existing symlink with a copy: the
+      # action's post-job cleanup removes the path with a plain `rm`, which
+      # fails on a real directory.
+      - name: Confirm the checkout is Homebrew's copy of this tap
         run: |
           set -euo pipefail
           TAP_DIR="$(brew --repository)/Library/Taps/rgielen/homebrew-taps"
-          mkdir -p "$(dirname "$TAP_DIR")"
-          rm -rf "$TAP_DIR"
-          cp -R "$GITHUB_WORKSPACE" "$TAP_DIR"
+          if [ ! -e "$TAP_DIR" ]; then
+            echo "setup-homebrew did not link the tap; linking it manually."
+            mkdir -p "$(dirname "$TAP_DIR")"
+            ln -s "$GITHUB_WORKSPACE" "$TAP_DIR"
+          fi
           brew tap
           test -f "$TAP_DIR/Formula/leitum.rb"
 
