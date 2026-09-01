@@ -38,8 +38,10 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # Pinned deliberately: @master is deprecated and becomes a hard error with
+      # Homebrew 5.2.0. This tap has no Renovate, so the SHA is bumped by hand.
       - name: Set up Homebrew
-        uses: Homebrew/actions/setup-homebrew@master
+        uses: Homebrew/actions/setup-homebrew@1f8e202ffddf94def7f42f6fa3a482e821489f9c # 2026.07.10.1
 
       # `brew audit [path]` is disabled in current Homebrew — every command
       # needs a formula NAME. So the checkout has to sit where Homebrew looks
@@ -62,8 +64,9 @@ jobs:
       - name: Install from source
         run: brew install --build-from-source --formula rgielen/taps/leitum
 
+      # `brew test` takes no --formula flag, unlike audit and install.
       - name: Test
-        run: brew test --formula rgielen/taps/leitum
+        run: brew test rgielen/taps/leitum
 
       - name: Smoke check the installed binary
         run: |
