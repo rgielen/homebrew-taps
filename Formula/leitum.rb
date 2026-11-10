@@ -3,8 +3,8 @@ class Leitum < Formula
 
   desc "Launch Claude Code against alternative LLM routers"
   homepage "https://github.com/rgielen/leitum"
-  url "https://files.pythonhosted.org/packages/2c/a4/cf6c92626c7d718cf1fe664bfcf542edef8d6c86225e2e9e0b2f726515b3/leitum-0.2.1.tar.gz"
-  sha256 "252f2059e74c1d3f914f707a168563724526d88f84e5efef4e86da90ac6b143d"
+  url "https://files.pythonhosted.org/packages/f0/c7/aee7d385d92622abdec50e38e431a46297d6935b1141579ea5504e0f7efc/leitum-0.2.2.tar.gz"
+  sha256 "3edfdf42b4a50a76d3562503bd07bb2546b673270fcb43ab585bdbb660e624f7"
   license "Apache-2.0"
 
   depends_on "rust" => :build
